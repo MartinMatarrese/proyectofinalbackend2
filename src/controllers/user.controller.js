@@ -9,9 +9,10 @@ class UserController extends Controllers {
     register = async(req, res, next) => {
         try {
             const user = await this.service.register(req.body);
-            res.json(user);
+            return res.status(201).json(user);
         } catch(error) {
-            next(error)
+            // next(error)
+            res.status(500).json({error: "Error interno en el servidor"})
         }
     };
 

@@ -20,13 +20,17 @@ class UserService extends Services {
             cart: user.cart
         };
         
-        return jwt.sign(payLoad, process.env.SECRET_KEY, {expiresIn: "10M"});
+        return jwt.sign(payLoad, process.env.SECRET_KEY, {expiresIn: "10m"});
     };
 
     getUserByEmail = async(email) => {
         try {
-            return await userRepository.getByEmail(email);
+            console.log("Buscando usuario en userRepository con email:", email);            
+            const user = await userRepository.getByEmail(email);
+            console.log("Resultado de userRepository.getByEmail:", user);            
+            return user;
         } catch(error) {
+            console.error("Error en getUserByEmail:", error)
             throw new Error("No se pudo obtener el usuario por el emial");
         }
     };
@@ -34,17 +38,45 @@ class UserService extends Services {
     register = async(user) => {
         try {
             const { email, password} = user;
+            console.log("Email recibido", email);
+            console.log("Password recibida:", password);
+            
+            console.log("Intentando buscar ususario en la base de datos...");
+            
             const existUser = await this.getUserByEmail(email);
+            console.log("Resultado de getUserByEmail", existUser);
+            
             if(existUser) throw new Error("El usuario ya existe");
+            console.log("Usuario no encontrado, creando carrito...");
+
             const cartUser = await cartServices.createCart();
+            console.log("Carrito creado:", cartUser);
+            if(!cartUser || !cartUser._id) {
+                throw new Error("Error al crear el carrito")
+            }
+            console.log("Creando usuario");
+            const passwordStr = String(password)
+            if (!password) {
+                throw new Error("La contraseña es obligatoria");
+            }
+            const hashedPassword = createHash(passwordStr);
+
+            if (!hashedPassword) {
+                throw new Error("Error al encriptar la contraseña");
+            }
+            
             const newUser = await userRepository.create({
                 ...user,
-                password: createHash(password),
+                password: hashedPassword,
                 cart: cartUser._id
             });
+            console.log("Usuario registrado con éxito:", newUser);
+            
             return newUser;
         } catch(error) {
-            throw new Error("Error al registrar el usuario");
+            console.log("Error detallado:", error);
+            
+            throw new Error(`Error al registrar el usuario: ${error.message}`);
         }
     };
 

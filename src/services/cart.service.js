@@ -1,7 +1,10 @@
 import Services from "./service.manager.js";
-import cartModel from "../daos/mongodb/models/cart.model.js";
+import persistence from "../daos/persistence.js";
+import ticketModel from "../daos/mongodb/models/ticket.model.js";
+import { cartRepository } from "../repository/cart.repository.js";
+import { productService } from "./product.service.js";
 
-const cartDao = cartModel;
+const { cartDao } = persistence
 
 class CartServices extends Services {
     constructor() {
@@ -10,7 +13,7 @@ class CartServices extends Services {
 
     createCart = async() => {
         try {
-            const newCart = await this.dao.create({products: []});
+            const newCart = await cartRepository.create({products: []});
             return newCart;
         } catch(error) {
             throw error            
@@ -19,7 +22,7 @@ class CartServices extends Services {
 
     addProdToCart = async(cartId, prodId) => {
         try {
-            return await this.dao.addProdToCart(cartId, prodId);
+            return await cartRepository.addProdToCart(cartId, prodId);
         } catch(error) {
             throw error            
         }
@@ -27,7 +30,7 @@ class CartServices extends Services {
 
     removeProdToCart = async(cartId, prodId) => {
         try {
-            return await this.dao.removeProdToCart(cartId, prodId);
+            return await cartRepository.removeProdToCart(cartId, prodId);
         } catch(error) {
             throw error            
         }
@@ -35,7 +38,7 @@ class CartServices extends Services {
 
     upDateProdQuantityToCart = async(cartId, prodId, quantity) => {
         try {
-            return await this.dao.upDateProdQuantityToCart(cartId, prodId, quantity);
+            return await cartRepository.upDateProdQuantityToCart(cartId, prodId, quantity);
         } catch(error) {
             throw error            
         }
@@ -43,13 +46,13 @@ class CartServices extends Services {
 
     getCartById = async(cartId) => {
         try {
-            return await this.dao.getCartById(cartId)
+            return await cartRepository.getCartById(cartId)
         } catch(error) {
             throw error
         }
     }
 
-    purchaseCart = async(cartId) => {
+    purchaseCart = async(cartId, email) => {
         const cart = await this.getCartById(cartId);
         if(!cart || cart.products.length === 0) {
             throw new Error("El carrito esta vacio o no existe");
@@ -64,26 +67,34 @@ class CartServices extends Services {
             if(product.stock >= item.quantity) {
                 product.stock -= item.quantity
                 await productService.updateProduct(product);
-                successFullPurchase.push(product);
-                totalAmount +- product.price * item.quantity;
+                successFullPurchase.push({
+                    product: item.product,
+                    quantity: item.quantity,
+                    price: product.price
+                });
+                totalAmount += product.price * item.quantity;
             } else {
                 insuficientStock.push(product);
             };
         };
 
         if(insuficientStock.length > 0) {
-            throw new Error("No hay suficiente stock para los siguientes productos");
+            const ticketData = {
+                amount: totalAmount,
+                purchaser: email
+            }
+            const ticket = await ticketModel.create(ticketData);
+            cart.porudcts = insuficientStock;
+            await cart.save();
+            return { ticket, insuficientStock };
+        } else {
+            throw new Error("No se pudo hacer la compra por falta de stock");            
         };
-
-        const ticketData = { cart, successFullPurchase, totalAmount };
-        const ticket = await ticketRepository.create(ticketData);
-        await this.clearCart(cartId);
-        return ticket;
     };
 
     clearCart = async(cartId) => {
         try {
-            return await this.dao.clearCart(cartId);
+            return await cartRepository.clearCart(cartId);
         } catch(error) {
             throw error            
         }

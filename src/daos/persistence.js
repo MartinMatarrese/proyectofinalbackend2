@@ -16,25 +16,27 @@ let ticketDao;
 
 let userDao;
 
-const peresistence = process.argv[2];
+const persistence = process.argv[2];
+console.log("Modo de persistencia recibido:", process.argv[2]);
 
-switch(peresistence) {
+
+switch(persistence) {
     case "fs":
         prodDao = prodDaoFs;
         cartDao = cartDaoFs;
         ticketDao = ticketDaoFs;
         userDao = UserDaoFs;
-        console.log(peresistence);
+        console.log(persistence);
         break;
     case "mongo":
         prodDao = prodDaoMongo;
         cartDao = cartDaoMongo;
         ticketDao = ticketDaoMongo;
         userDao = UserDaoMongo;
-        initMongoDB()
+        await initMongoDB()
         .then(() => console.log("Base de datos conectada"))
         .catch((error) => console.log(error))
-        console.log(peresistence);
+        console.log(persistence);
         break;
     default:
         prodDao = prodDaoFs;
@@ -43,5 +45,7 @@ switch(peresistence) {
         userDao = UserDaoFs;
         break;    
 };
+console.log("UserDao seleccionado:", userDao);
+
 
 export default { prodDao, cartDao, ticketDao, userDao };

@@ -1,6 +1,6 @@
-import persistence from "../daos/persistence";
-import TicketReqDto from "../dtos/ticket.req.dto";
-import TicketResDto from "../dtos/ticket.res.dto";
+import persistence from "../daos/persistence.js";
+import TicketReqDto from "../dtos/ticket.req.dto.js";
+import TicketResDto from "../dtos/ticket.res.dto.js";
 
 const { ticketDao } = persistence
 

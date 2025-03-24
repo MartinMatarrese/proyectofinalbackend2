@@ -1,5 +1,6 @@
 import cartModel from "../daos/mongodb/models/cart.model.js";
 import { cartServices } from "../services/cart.service.js";
+import { productService } from "../services/product.service.js";
 
 export class CartControllers {
     constructor() {
@@ -82,6 +83,56 @@ export class CartControllers {
             console.log(e);
             res.status(500).send(e)        
         }
+    };
+
+    purchaseCart = async(req, res, next) => {
+      try{
+            const cartId = req.params.cid;
+            const cart = await cartServices.getCartById(cartId);
+            const products = cart.products;
+
+            const productsToProcess = [];
+            const productsNotProcessed = [];
+            for (let product of products) {
+                const productData = await productService.getProductById(product.productId);
+                if (productData.stock >= product.quantity) {
+                    productData.stock -= product.quantity;
+                    await productService.updateProductStock(productData._id, productData.stock);
+                    productsToProcess.push({
+                        productId: product.productId,
+                        quantity: product.quantity,
+                        price: productData.price,
+                        subtotal: product.quantity * productData.price
+                    });
+                } else {
+                    productsNotProcessed.push(product.productId);
+                }
+            }
+            if (productsToProcess.length > 0) {
+                const totalAmount = productsToProcess.reduce((acc, product) => acc + product.subtotal, 0);
+            
+                const ticket = await TicketService.createTicket({
+                    amount: totalAmount,
+                    purchaser: req.body.name,
+                    products: productsToProcess,
+                });
+                const updatedCartProducts = cart.products.filter(product => !productsNotProcessed.includes(product.productId));
+                await cartServices.updateCart(cartId, updatedCartProducts);
+
+                return res.status(200).json({
+                    message: "Compra finalizada",
+                    ticket,
+                    productsNotProcessed
+                });
+            } else {
+                return res.status(400).json({
+                    message: "No hay productos disponibles en stock para completar la compra",
+                    productsNotProcessed
+                });
+            }
+        } catch(error) {
+            return res.status(500).json({message: `Error al procesar la compra: ${error.message}`});
+        }; 
     };
     
     deleteProductCart = async (req, res) => {

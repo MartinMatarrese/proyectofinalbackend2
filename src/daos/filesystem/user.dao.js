@@ -45,4 +45,4 @@ class UserDaoFs {
 
 };
 
-export const userDao = new UserDaoFs("/src/users.jsron");
+export const userDao = new UserDaoFs("/src/users.json");

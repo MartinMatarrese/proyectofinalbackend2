@@ -16,6 +16,10 @@ class ProductService extends Services {
             throw Error(error);
         };
     };
+
+    updateProductStock = async(id, stock) => {
+        return await productRepository.findByIdUpdate(id, {stock}, {new: true});
+    }
 };
 
 export const productService = new ProductService();

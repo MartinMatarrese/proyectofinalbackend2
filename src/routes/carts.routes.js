@@ -1,25 +1,26 @@
 import { Router } from "express";
 import { CartControllers } from "../controllers/carts.controllers.js"
 import { roleAuth } from "../middlewares/roleAuth.js";
+import { jwtAuth } from "../middlewares/jwtAuth.js";
 
 const cartRouter = Router();
 
 const cartControllers = new CartControllers();
 
-cartRouter.get("/:cid", roleAuth("user"), cartControllers.getCart);
+cartRouter.get("/:cid", jwtAuth, roleAuth(["user"]), cartControllers.getCart);
 
-cartRouter.post("/", roleAuth("user"), cartControllers.createCart);
+cartRouter.post("/", jwtAuth, roleAuth(["user"]), cartControllers.createCart);
 
-cartRouter.post("/:cid/products/:pid", roleAuth("user"), cartControllers.insiderProductCart);
+cartRouter.post("/:cid/products/:pid", jwtAuth, roleAuth(["user"]), cartControllers.insiderProductCart);
 
-cartRouter.put("/:cid", roleAuth("user"), cartControllers.updateProductsCart);
+cartRouter.put("/:cid", jwtAuth, roleAuth(["user"]), cartControllers.updateProductsCart);
 
-cartRouter.post("/:cid/products/:pid", roleAuth("user"), cartControllers.updateQuantityProductCart);
+cartRouter.put("/:cid/products/:pid", jwtAuth, roleAuth(["user"]), cartControllers.updateQuantityProductCart);
 
-cartRouter.delete("/:cid", roleAuth("user"), cartControllers.deleteCart);
+cartRouter.post("/:cid/purchase", jwtAuth, roleAuth(["user"]), cartControllers.purchaseCart);
 
-cartRouter.delete("/:cid/products/:pid", roleAuth("user"), cartControllers.deleteProductCart);
+cartRouter.delete("/:cid", jwtAuth, roleAuth(["user"]), cartControllers.deleteCart);
 
-cartRouter
+cartRouter.delete("/:cid/products/:pid", jwtAuth, roleAuth(["user"]), cartControllers.deleteProductCart);
 
 export default cartRouter

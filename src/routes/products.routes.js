@@ -1,18 +1,20 @@
 import { Router } from "express";
 import { productController } from "../controllers/products.controllers.js";
 import { roleAuth } from "../middlewares/roleAuth.js";
+import { productValidator } from "../middlewares/product.validator.js";
+import { jwtAuth } from "../middlewares/jwtAuth.js";
 
 
 const productRouter = Router();
 
-productRouter.get("/", roleAuth("admin"), productController.createProduct);
+productRouter.get("/", productController.getProducts);
 
-productRouter.get("/:pid", roleAuth("admin"), productController.getProduct);
+productRouter.get("/:pid", productController.getProduct);
 
-productRouter.post("/", roleAuth("admin"), productController.getProducts);
+productRouter.post("/", jwtAuth, roleAuth(["admin"]), productValidator, productController.createProduct);
 
-productRouter.put("/:pid", roleAuth("admin"), productController.updateProduct);
+productRouter.put("/:pid", jwtAuth, roleAuth(["admin"]), productController.updateProduct);
 
-productRouter.delete("/:pid", roleAuth("admin"), productController.deleteProduct);
+productRouter.delete("/:pid", jwtAuth, roleAuth(["admin"]), productController.deleteProduct);
 
 export default productRouter
