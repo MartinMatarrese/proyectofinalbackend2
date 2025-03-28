@@ -3,5 +3,5 @@ export default class ProductResDto {
         this.nombre = product.title;
         this.precio = product.price;
         this.disponible = product.stock;
-    }
+    };
 };

@@ -5,6 +5,17 @@ class CartDaoMongo extends MongoDao {
     constructor() {
         super(cartModel)
     };
+
+    // createCart = async() => {
+    //     try {
+    //         const newCart = await cartModel.create({products: []});
+    //         return newCart;
+    //     } catch(error) {
+    //         throw Error(error);
+    //     };
+    // };
+
+
 };
 
 export const cartDao = new CartDaoMongo();

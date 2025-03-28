@@ -23,8 +23,11 @@ class UserController extends Controllers {
             .cookie("token", token, { httpOnly: true })
             .json({ message: "Login Ok", token});
         } catch(error) {
-            next(error)
-        }
+            if(error.message === "Usuario no encontrado" || error.message === "Credenciales incorrectas") {
+                return res.status(401).json({ error: error.message });
+            };
+            next(error);
+        };
     };
 
     privateData = async(req, res, next) => {

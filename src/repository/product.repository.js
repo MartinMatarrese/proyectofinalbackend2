@@ -9,6 +9,15 @@ class ProductRepository {
         this.dao = prodDao
     }
 
+    getAll = async() => {
+        try {
+            const products = await this.dao.getAll();
+            return products.map(prod => new ProductResDto(prod));
+        } catch(error) {
+            throw new Error(error);            
+        }
+    }
+
     createProd = async(product) => {
         try {
             const prodDao = new ProductReqDto(product);

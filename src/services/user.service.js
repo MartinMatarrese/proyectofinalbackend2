@@ -82,6 +82,9 @@ class UserService extends Services {
 
     login = async(user) => {
         try {
+            if(!user || !user.email || !user.password) {
+                throw new Error("Faltan datos para iniciar sesión");
+            }
             const { email, password } = user;
             const userExist = await this.getUserByEmail(email);
             if(!userExist) throw new Error("Usuario no encontrado");
@@ -89,7 +92,7 @@ class UserService extends Services {
             if(!passValid) throw new Error("Credenciales incorrectas");
             return this.generateToken(userExist);
         } catch (error) {
-            throw new Error("Error al inicio de sesión");
+            throw new Error(error);
         }
     };
 };

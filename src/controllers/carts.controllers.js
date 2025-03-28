@@ -1,6 +1,5 @@
 import cartModel from "../daos/mongodb/models/cart.model.js";
 import { cartServices } from "../services/cart.service.js";
-import { productService } from "../services/product.service.js";
 
 export class CartControllers {
     constructor() {
@@ -15,16 +14,19 @@ export class CartControllers {
     getCart = async (req, res) => {
         try {
             const cartId = req.params.cid
-            const cart = await cartModel.findOne({_id: cartId})
+            const cart = await cartModel.findOne({_id: cartId}).populate("products.id_prod");
+            if(!cart) {
+                return res.status(400).json({ message: "Carrito no encontrado"});
+            }
             res.status(200).send(cart)
-        } catch(e) {
-            res.status(500).send(e)
-        }
+        } catch(error) {
+            res.status(500).json({ message: "Error interno en el servidor"});
+        };
     };
     
     createCart = async (req, res) => {
         try {
-            const respuesta = await cartServices.create({products: []})
+            const respuesta = await cartServices.createCart({products: []})
             res.status(201).send(respuesta)
         } catch(e) {
             res.status(500).send(e)
@@ -72,7 +74,7 @@ export class CartControllers {
             const cartId = req.params.cid
             const productId = req.params.pid
             const {quantity} = req.body
-            const cart = await cartModel.findOne(cartId)
+            const cart = await cartModel.findOne({_id: cartId})
             const indice = cart.products.findIndex(prod => prod.id_prod._id == productId) 
             if(indice != -1) { 
                 cart.products[indice].quantity = quantity
@@ -87,51 +89,18 @@ export class CartControllers {
 
     purchaseCart = async(req, res, next) => {
       try{
-            const cartId = req.params.cid;
-            const cart = await cartServices.getCartById(cartId);
-            const products = cart.products;
-
-            const productsToProcess = [];
-            const productsNotProcessed = [];
-            for (let product of products) {
-                const productData = await productService.getProductById(product.productId);
-                if (productData.stock >= product.quantity) {
-                    productData.stock -= product.quantity;
-                    await productService.updateProductStock(productData._id, productData.stock);
-                    productsToProcess.push({
-                        productId: product.productId,
-                        quantity: product.quantity,
-                        price: productData.price,
-                        subtotal: product.quantity * productData.price
-                    });
-                } else {
-                    productsNotProcessed.push(product.productId);
-                }
-            }
-            if (productsToProcess.length > 0) {
-                const totalAmount = productsToProcess.reduce((acc, product) => acc + product.subtotal, 0);
+            const cartId = req.params.cid;            
+            const result = await cartServices.purchaseCart(cartId);
             
-                const ticket = await TicketService.createTicket({
-                    amount: totalAmount,
-                    purchaser: req.body.name,
-                    products: productsToProcess,
-                });
-                const updatedCartProducts = cart.products.filter(product => !productsNotProcessed.includes(product.productId));
-                await cartServices.updateCart(cartId, updatedCartProducts);
-
-                return res.status(200).json({
-                    message: "Compra finalizada",
-                    ticket,
-                    productsNotProcessed
-                });
-            } else {
-                return res.status(400).json({
-                    message: "No hay productos disponibles en stock para completar la compra",
-                    productsNotProcessed
-                });
+            if(result.error) {
+                return res.status(400).json(result);
             }
+            
+            res.status(200).json({ticket: result.ticket, productsOutStock: result.productsOutStock});
         } catch(error) {
-            return res.status(500).json({message: `Error al procesar la compra: ${error.message}`});
+            console.error("Error en purchaseCart:", error);
+            
+            return res.status(500).json({message: "Error al procesar la compra.", error: error.message});
         }; 
     };
     

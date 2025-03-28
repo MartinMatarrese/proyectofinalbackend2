@@ -23,4 +23,5 @@ cartRouter.delete("/:cid", jwtAuth, roleAuth(["user"]), cartControllers.deleteCa
 
 cartRouter.delete("/:cid/products/:pid", jwtAuth, roleAuth(["user"]), cartControllers.deleteProductCart);
 
+
 export default cartRouter

@@ -1,16 +1,18 @@
-import persistence from "../daos/persistence.js";
+import { ticketRepository } from "../repository/ticket.repository.js";
 import Services from "./service.manager.js";
-
-const { ticketDao } = persistence;
 
 class TicketService extends Services {
     constructor() {
-        super(ticketDao)
+        super(ticketRepository)
     };
 
     createTicket = async(ticketData) => {
-        const ticket = new ticket(ticketData);
-        return await ticket.save();
+        try {
+            const ticket = await ticketRepository.create(ticketData);
+            return ticket;
+        }catch(error) {
+            throw new Error(`Error al crear el ticket ${error.message}`);
+        }
     };
 
 };

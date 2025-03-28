@@ -1,19 +1,16 @@
 import Services from "./service.manager.js";
-import persistence from "../daos/persistence.js";
-import ticketModel from "../daos/mongodb/models/ticket.model.js";
 import { cartRepository } from "../repository/cart.repository.js";
-import { productService } from "./product.service.js";
-
-const { cartDao } = persistence
+import { productRepository } from "../repository/product.repository.js";
+import { ticketRepository } from "../repository/ticket.repository.js";
 
 class CartServices extends Services {
     constructor() {
-        super(cartDao);
+        super(cartRepository);
     }
 
     createCart = async() => {
         try {
-            const newCart = await cartRepository.create({products: []});
+            const newCart = await cartRepository.createCart({products: []});
             return newCart;
         } catch(error) {
             throw error            
@@ -22,7 +19,7 @@ class CartServices extends Services {
 
     addProdToCart = async(cartId, prodId) => {
         try {
-            return await cartRepository.addProdToCart(cartId, prodId);
+            return await cartRepository.addProductToCart(cartId, prodId);
         } catch(error) {
             throw error            
         }
@@ -48,47 +45,59 @@ class CartServices extends Services {
         try {
             return await cartRepository.getCartById(cartId)
         } catch(error) {
-            throw error
-        }
+            throw new Error(error);
+        };
     }
 
-    purchaseCart = async(cartId, email) => {
-        const cart = await this.getCartById(cartId);
-        if(!cart || cart.products.length === 0) {
-            throw new Error("El carrito esta vacio o no existe");
-        };
+    calculateTotalAmount = (products) => {
+        return products.reduce((total, item) => {
+            if(!item.price) {
+                console.error("Producto sin precio:", item);
+            };
 
-        const insuficientStock = [];
-        const successFullPurchase = [];
-        const totalAmount = 0;
+            return total + (item.quantity * item.price || 0);
+        }, 0)
+    };
+
+    purchaseCart = async(cartId) => {
+        try {
+            const cart = await cartRepository.getCartById(cartId);
+        if(!cart || !cart.products || cart.products.length === 0) {
+            throw new Error("Carrito no encontrado");
+        };
+        
+        let productsToPurchase = [];
+        let productsOutStock = [];
 
         for(let item of cart.products) {
-            const product = await this.productService.getProductById(item.product);
-            if(product.stock >= item.quantity) {
-                product.stock -= item.quantity
-                await productService.updateProduct(product);
-                successFullPurchase.push({
-                    product: item.product,
-                    quantity: item.quantity,
-                    price: product.price
-                });
-                totalAmount += product.price * item.quantity;
-            } else {
-                insuficientStock.push(product);
+            const product = await productRepository.getById(item.id_prod);
+
+            if(!product || product.stock < item.quantity) {
+                productsOutStock.push(item.id_prod);
+                continue;
             };
+            product.stock -= item.quantity;
+            await productRepository.update(product.id_prod, { stock: product.stock});
+            productsToPurchase.push(item);
         };
 
-        if(insuficientStock.length > 0) {
-            const ticketData = {
-                amount: totalAmount,
-                purchaser: email
-            }
-            const ticket = await ticketModel.create(ticketData);
-            cart.porudcts = insuficientStock;
-            await cart.save();
-            return { ticket, insuficientStock };
-        } else {
-            throw new Error("No se pudo hacer la compra por falta de stock");            
+        const totalAmount = calculateTotalAmount(productsToPurchase);        
+
+        const ticketData = {
+            purchaser: cart.user,
+            amount: this.calculateTotalAmount(productsToPurchase),
+            products: Array.isArray(productsToPurchase) ? productsToPurchase.map(item => item.id_prod) : []
+        };
+        
+
+        const ticket = await ticketRepository.create(ticketData);        
+
+        cart.products.filter(product => productsOutStock.includes(product.id_prod));
+        await cartRepository.update(cart._id, { products: cart.products});
+
+        return {ticket, productsOutStock};
+        } catch(error) {            
+            throw new Error("Error al procesar la compra en el carrito");            
         };
     };
 

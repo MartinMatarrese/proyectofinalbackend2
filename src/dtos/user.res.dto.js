@@ -7,5 +7,5 @@ export default class UserResDto {
         this.edad = user.age;
         this.role = user.role;
         this.carrito = user.cart;
-    }
-}
+    };
+};

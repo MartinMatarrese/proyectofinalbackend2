@@ -1,12 +1,9 @@
-import persistence from "../daos/persistence.js";
 import { productRepository } from "../repository/product.repository.js";
 import Services from "./service.manager.js";
 
-const { prodDao } = persistence;
-
 class ProductService extends Services {
     constructor() {
-        super(prodDao)
+        super(productRepository)
     };
 
     getProdById = async(id) => {

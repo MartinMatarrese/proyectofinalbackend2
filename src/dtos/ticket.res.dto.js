@@ -2,8 +2,8 @@ export default class TicketResDto {
     constructor(ticket) {
         this.id = ticket._id;
         this.code = ticket.code;
-        this.purchese_datetime = ticket.purchese_datetime;
+        this.purchase_datetime = ticket.purchase_datetime;
         this.amount = ticket.amount;
         this.purchaser = ticket.purchaser;
-    }
-}
+    };
+};

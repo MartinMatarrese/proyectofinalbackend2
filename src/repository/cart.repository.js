@@ -7,7 +7,15 @@ const { cartDao } = persistence
 class CartRepository {
     constructor(){
         this.dao = cartDao
-    }
+    };
+
+    createCart = async() => {
+        try {
+            return await this.dao.create();
+        } catch(error) {
+            throw new Error(error)
+        };
+    };
 
     addProductToCart =async (cartId, productId, quantity) => {
         try {
