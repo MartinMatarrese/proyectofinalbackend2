@@ -35,6 +35,15 @@ class ProductRepository {
             throw new Error(error);
         };
     };
+
+    updateProductStock = async(id, data) => {
+        try {
+            const updateProd = await this.dao.update(id, data, {new: true});
+            return updateProd
+        } catch (error) {
+            throw new Error(error)
+        }
+    }
 };
 
 export const productRepository = new ProductRepository();

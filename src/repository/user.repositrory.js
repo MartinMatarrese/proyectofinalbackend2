@@ -31,11 +31,19 @@ class UserRepository {
         try {
             const user = await this.dao.getByEmail(email)
             return user;
-        } catch(error) {
-            console.log("Error al obtener el usuario por el email:", error);            
+        } catch(error) {            
             throw new Error("Error en la base de datos");
-        }
-    }
+        };
+    };
+
+    update = async(userId, dataToUpdate) => {
+        try {
+            const response = await this.dao.findByIdAndUpdate(userId, dataToUpdate, { new: true });
+            return response
+        } catch (error) {
+            throw new Error(`Error al actualizar el carrito del usuario: ${error.message}`);
+        };
+    };
 };
 
 export const userRepository = new UserRepository();

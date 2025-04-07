@@ -6,14 +6,30 @@ class CartDaoMongo extends MongoDao {
         super(cartModel)
     };
 
-    // createCart = async() => {
-    //     try {
-    //         const newCart = await cartModel.create({products: []});
-    //         return newCart;
-    //     } catch(error) {
-    //         throw Error(error);
-    //     };
-    // };
+    createCart = async(data) => {
+        try {
+            const newCart = await cartModel.create(data);
+            return newCart;
+        } catch(error) {
+            throw Error(error);
+        };
+    };
+
+    getCartById = async(id) => {
+        try {
+            return await cartModel.findById(id).populate("products.id_prod")
+        } catch (error) {
+            throw new Error(error);                  
+        };
+    };
+
+    update = async(cartId, updateData) => {
+        try {
+            return await cartModel.findByIdAndUpdate(cartId, updateData, {new: true});
+        } catch (error) {
+            throw new Error(error);
+        };
+    };
 
 
 };

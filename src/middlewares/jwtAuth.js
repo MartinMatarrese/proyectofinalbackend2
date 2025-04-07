@@ -5,12 +5,12 @@ const SECRET_KEY = process.env.SECRET_KEY
 
 export const jwtAuth = (req, res, next) => {
     try {
-        const token = req.get("Authorization");
+        const token = req.cookies.token;
         if(!token) {
             return res.status(401).json({error: "No autorizado"});
         };
-        const tokenClean = token.split(" ")[1];
-        const decodeToken = jwt.verify(tokenClean, SECRET_KEY);
+        // const tokenClean = token.split(" ")[1];
+        const decodeToken = jwt.verify(token, SECRET_KEY);
         req.user = decodeToken;
         next();
     } catch(error) {

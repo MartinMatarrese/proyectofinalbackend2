@@ -1,20 +1,23 @@
 import Services from "./service.manager.js";
 import { cartRepository } from "../repository/cart.repository.js";
 import { productRepository } from "../repository/product.repository.js";
-import { ticketRepository } from "../repository/ticket.repository.js";
+import { ticketService } from "./ticket.service.js";
+import { productService } from "./product.service.js";
+import { v4 as uuidv4 } from "uuid";
 
 class CartServices extends Services {
     constructor() {
         super(cartRepository);
     }
 
-    createCart = async() => {
+    createCart = async(data) => {
         try {
-            const newCart = await cartRepository.createCart({products: []});
+            const { userId } = data            
+            const newCart = await cartRepository.createCart(data);           
             return newCart;
-        } catch(error) {
-            throw error            
-        }
+        } catch(error) {            
+            throw new Error("Error al crear el carrito" + error.message);            
+        };
     };
 
     addProdToCart = async(cartId, prodId) => {
@@ -62,42 +65,47 @@ class CartServices extends Services {
     purchaseCart = async(cartId) => {
         try {
             const cart = await cartRepository.getCartById(cartId);
-        if(!cart || !cart.products || cart.products.length === 0) {
-            throw new Error("Carrito no encontrado");
+        if(!cart) {
+            throw new Error(`No se encontro el carrito con ID ${cartId}`);
         };
-        
+        if(!cart.products || !Array.isArray(cart.products)) {
+            throw new Error(`El carrito con ID ${cartId} no tiene productos`);
+            
+        }
         let productsToPurchase = [];
         let productsOutStock = [];
 
-        for(let item of cart.products) {
-            const product = await productRepository.getById(item.id_prod);
+        for(const item of cart.products) {
+            const product = await productService.getProdById(item.id_prod);
 
             if(!product || product.stock < item.quantity) {
-                productsOutStock.push(item.id_prod);
-                continue;
+                productsOutStock.push(item);
+            } else {
+                product.stock -= item.quantity;
+                await productService.updateProductStock(product.id, product.stock);
+                productsToPurchase.push(item)
             };
-            product.stock -= item.quantity;
-            await productRepository.update(product.id_prod, { stock: product.stock});
-            productsToPurchase.push(item);
         };
 
-        const totalAmount = calculateTotalAmount(productsToPurchase);        
+        if(productsToPurchase.length === 0) {
+            throw new Error("No hay productos disponibles para comprar");
+        };
 
         const ticketData = {
-            purchaser: cart.user,
+            code: uuidv4(),
+            purchaser: cart.userId,
             amount: this.calculateTotalAmount(productsToPurchase),
-            products: Array.isArray(productsToPurchase) ? productsToPurchase.map(item => item.id_prod) : []
-        };
-        
+            products: productsToPurchase.map(item => item.id_prod)
+        };        
 
-        const ticket = await ticketRepository.create(ticketData);        
+        const ticket = await ticketService.createTicket(ticketData);
 
-        cart.products.filter(product => productsOutStock.includes(product.id_prod));
-        await cartRepository.update(cart._id, { products: cart.products});
+        const productosRestantes = cart.products.filter(item => productsOutStock.find(out => out.id_prod === item.id_prod));
+        await cartRepository.update(cart._id, { products: productosRestantes})
 
         return {ticket, productsOutStock};
-        } catch(error) {            
-            throw new Error("Error al procesar la compra en el carrito");            
+        } catch(error) {                    
+            throw new Error("Error al procesar la compra en el carrito" + error.message);            
         };
     };
 

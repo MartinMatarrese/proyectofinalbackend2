@@ -26,7 +26,8 @@ export class CartControllers {
     
     createCart = async (req, res) => {
         try {
-            const respuesta = await cartServices.createCart({products: []})
+            const userId = req.user._id;
+            const respuesta = await cartServices.createCart({userId, products: []});
             res.status(201).send(respuesta)
         } catch(e) {
             res.status(500).send(e)
@@ -89,18 +90,11 @@ export class CartControllers {
 
     purchaseCart = async(req, res, next) => {
       try{
-            const cartId = req.params.cid;            
-            const result = await cartServices.purchaseCart(cartId);
-            
-            if(result.error) {
-                return res.status(400).json(result);
-            }
-            
-            res.status(200).json({ticket: result.ticket, productsOutStock: result.productsOutStock});
-        } catch(error) {
-            console.error("Error en purchaseCart:", error);
-            
-            return res.status(500).json({message: "Error al procesar la compra.", error: error.message});
+            const { cid } = req.params;                        
+            const result = await cartServices.purchaseCart(cid);
+            res.status(200).json({ message: "Compra completada", result})
+        } catch(error) {          
+            return res.status(500).json({message: "Error al procesar la compra."});
         }; 
     };
     

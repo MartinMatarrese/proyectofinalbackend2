@@ -15,7 +15,7 @@ class ProductService extends Services {
     };
 
     updateProductStock = async(id, stock) => {
-        return await productRepository.findByIdUpdate(id, {stock}, {new: true});
+        return await productRepository.updateProductStock(id, { stock: Number(stock) });
     }
 };
 

@@ -27,7 +27,7 @@ export default class MongoDao {
         }
     };
 
-    async update(id, onj) {
+    async update(id, obj) {
         try {
             return await this.model.findByIdAndUpdate(id, obj, {new: true});
         } catch(error) {

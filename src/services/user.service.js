@@ -12,6 +12,7 @@ class UserService extends Services {
 
     generateToken = (user) => {
         const payLoad = {
+            _id: user._id,
             first_name: user.first_name,
             last_name: user.last_name,
             email: user.email,
@@ -24,37 +25,21 @@ class UserService extends Services {
     };
 
     getUserByEmail = async(email) => {
-        try {
-            console.log("Buscando usuario en userRepository con email:", email);            
-            const user = await userRepository.getByEmail(email);
-            console.log("Resultado de userRepository.getByEmail:", user);            
+        try {            
+            const user = await userRepository.getByEmail(email);            
             return user;
         } catch(error) {
-            console.error("Error en getUserByEmail:", error)
             throw new Error("No se pudo obtener el usuario por el emial");
         }
     };
 
     register = async(user) => {
         try {
-            const { email, password} = user;
-            console.log("Email recibido", email);
-            console.log("Password recibida:", password);
-            
-            console.log("Intentando buscar ususario en la base de datos...");
-            
+            const { email, password} = user;            
             const existUser = await this.getUserByEmail(email);
-            console.log("Resultado de getUserByEmail", existUser);
             
             if(existUser) throw new Error("El usuario ya existe");
-            console.log("Usuario no encontrado, creando carrito...");
-
-            const cartUser = await cartServices.createCart();
-            console.log("Carrito creado:", cartUser);
-            if(!cartUser || !cartUser._id) {
-                throw new Error("Error al crear el carrito")
-            }
-            console.log("Creando usuario");
+           
             const passwordStr = String(password)
             if (!password) {
                 throw new Error("La contraseña es obligatoria");
@@ -67,17 +52,15 @@ class UserService extends Services {
             
             const newUser = await userRepository.create({
                 ...user,
-                password: hashedPassword,
-                cart: cartUser._id
+                password: hashedPassword
             });
-            console.log("Usuario registrado con éxito:", newUser);
-            
-            return newUser;
-        } catch(error) {
-            console.log("Error detallado:", error);
-            
+
+            const cartUser = await cartServices.createCart(newUser._id);
+            const updateUser = await userRepository.update(newUser._id, { cart: cartUser._id});            
+            return updateUser
+        } catch(error) {            
             throw new Error(`Error al registrar el usuario: ${error.message}`);
-        }
+        };
     };
 
     login = async(user) => {

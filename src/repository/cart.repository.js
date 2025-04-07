@@ -9,11 +9,15 @@ class CartRepository {
         this.dao = cartDao
     };
 
-    createCart = async() => {
+    createCart = async(cartData) => {
         try {
-            return await this.dao.create();
+            const response = new CartReqDto(cartData);
+            const cart = await this.dao.create(response);
+            return cart
         } catch(error) {
-            throw new Error(error)
+            console.error("cartRepository - Error al crear el carrtio:", error.message);
+            
+            throw new Error(`Error en cartRepository al crear el carrito: ${error.message}`);
         };
     };
 
@@ -28,12 +32,30 @@ class CartRepository {
 
     getCartById = async(id) => {
         try {
-            const response = new CartResDto(id);
-            return await this.dao.getCartById(response)
-        } catch(error) {
-            throw new Error(error)
-        }
+            if(!id) {
+                throw new Error("ID del carrito no proporcionado");                
+            };
+            const cart = await this.dao.getCartById(id);
+            const response = new CartResDto(cart)
+            
+            if(!cart) {
+                return null;                
+            };           
+            return response
+        } catch(error) {            
+            throw new Error(error);
+        };
     };
+
+    update = async(cartId, updateData) => {
+        try {
+            const updateCart = await this.dao.update(cartId, updateData);
+            return updateCart;
+        } catch (error) {
+            throw new Error("Error en cartRepository: " + error.message);
+            
+        }
+    }
 };
 
 export const cartRepository = new CartRepository();
